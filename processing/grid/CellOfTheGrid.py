@@ -27,4 +27,5 @@ class CellOfTheGrid:
         for polygon in list_of_geom:
             if polygon is not None:
                 self.geometry.addPartGeometry(polygon)
-        self.geometry.deletePart(0)
+        # self.geometry.deletePart(0)
+        return list_of_geom

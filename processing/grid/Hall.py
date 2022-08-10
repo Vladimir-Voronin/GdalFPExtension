@@ -104,7 +104,6 @@ class Hall:
 
         layer.dataProvider().addFeatures(feats)
         layer.triggerRepaint()
-        print("HERE")
 
     def create_multipolygon_geometry_by_hall(self, obstacles, project):
         features = obstacles.getFeatures()
@@ -133,7 +132,6 @@ class Hall:
         for geometry in list_of_geometry:
             if polygon.distance(geometry) == 0.0:
                 list_of_geometry_handled.append(geometry)
-        print("objects_number: ", len(list_of_geometry_handled))
         # because we cant add Part of geometry to empty OgsGeometry instance
         multi_polygon_geometry = QgsGeometry.fromPolygonXY([[QgsPointXY(1, 1), QgsPointXY(2, 2), QgsPointXY(2, 1)]])
 
@@ -143,6 +141,19 @@ class Hall:
         multi_polygon_geometry.deletePart(0)
 
         return multi_polygon_geometry
+
+    def create_multipolygon_geometry_by_hall_and_list(self, list_of_obstacles):
+        list_of_geom = []
+        for obstacle in list_of_obstacles:
+            if self.hall_polygon.distance(obstacle) == 0:
+                list_of_geom.append(obstacle)
+
+        geometry = QgsGeometry.fromPolygonXY([[QgsPointXY(1, 1), QgsPointXY(2, 2), QgsPointXY(2, 1)]])
+        for polygon in list_of_geom:
+            if polygon is not None:
+                geometry.addPartGeometry(polygon)
+        geometry.deletePart(0)
+        return geometry
 
     def create_list_of_obstacles(self, obstacles, project):
         features = obstacles.getFeatures()
@@ -225,7 +236,7 @@ class Hall:
                 point = xform.transform(point.x(), point.y())
                 list_of_points_to_line.append(point)
 
-        ######################################## HERE BEGINS Errors
+        # HERE BEGINS Errors
             create_line = QgsGeometry.fromPolylineXY(list_of_points_to_line)
             list_of_geometry.append(create_line)
         polygon = self.hall_polygon

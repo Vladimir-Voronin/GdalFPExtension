@@ -1,12 +1,13 @@
 from qgis.core import *
-from algorithms.GdalFPExtension.grid.CellOfTheGrid import CellOfTheGrid
+from algorithms.GdalUAV.processing.grid.CellOfTheGrid import CellOfTheGrid
 import numpy as np
 
-from algorithms.GdalFPExtension.gdalObjects.GeometryPointExpand import GeometryPointExpand
-from algorithms.GdalFPExtension.qgis.visualization.Visualizer import Visualizer
+from algorithms.GdalUAV.processing.GeometryPointExpand import GeometryPointExpand
+from algorithms.GdalUAV.qgis.visualization.Visualizer import Visualizer
+from functools import lru_cache
 
 
-class GridForRoadmap:
+class GridForSearchMethods:
     def __init__(self, row, column, step_of_the_grid, bottom_y, left_x):
         self.cells = np.zeros((row, column), dtype=CellOfTheGrid)
         self.step_of_the_grid = step_of_the_grid
@@ -61,20 +62,9 @@ class GridForRoadmap:
                     if cell.point_rx_by.y() <= point_y <= cell.point_lx_ty.y():
                         return GeometryPointExpand(point, cell.n_row, cell.n_column)
 
-    def get_multipolygon_by_points(self, point1, point2):
-        cell1 = self.cells[point1.n_row][point1.n_column]
-        cell2 = self.cells[point2.n_row][point2.n_column]
-        if (cell1 or cell2) is None:
-            raise Exception("One or both points not in grid")
-        if cell1 == cell2:
-            # print(f"{cell1.number_of_polyg}", end=" ")
-            return cell1.geometry
-
+    @lru_cache(maxsize=100)
+    def __get_multipolygin_by_rows_and_columns(self, min_row, max_row, min_column, max_column):
         list_of_cells = []
-        min_row = min(cell1.n_row, cell2.n_row)
-        max_row = max(cell1.n_row, cell2.n_row)
-        min_column = min(cell1.n_column, cell2.n_column)
-        max_column = max(cell1.n_column, cell2.n_column)
         numbers = 0
         for i in range(min_row, max_row + 1):
             for k in range(min_column, max_column + 1):
@@ -88,29 +78,33 @@ class GridForRoadmap:
         polygon.deletePart(0)
         return polygon
 
-    def get_multipolygon_by_cells(self, cell1, cell2):
+    def get_multipolygon_by_points(self, point1, point2):
+        cell1 = self.cells[point1.n_row][point1.n_column]
+        cell2 = self.cells[point2.n_row][point2.n_column]
         if (cell1 or cell2) is None:
             raise Exception("One or both points not in grid")
         if cell1 == cell2:
-            # print(f"{cell1.number_of_polyg}", end=" ")
             return cell1.geometry
 
-        list_of_cells = []
         min_row = min(cell1.n_row, cell2.n_row)
         max_row = max(cell1.n_row, cell2.n_row)
         min_column = min(cell1.n_column, cell2.n_column)
         max_column = max(cell1.n_column, cell2.n_column)
-        numbers = 0
-        for i in range(min_row, max_row + 1):
-            for k in range(min_column, max_column + 1):
-                numbers += self.cells[i][k].number_of_polyg
-                list_of_cells.append(self.cells[i][k])
 
-        polygon = QgsGeometry(list_of_cells[0].geometry)
-        for i in range(1, len(list_of_cells)):
-            if list_of_cells[i].geometry is not None:
-                polygon.addPartGeometry(list_of_cells[i].geometry)
-        return polygon
+        return self.__get_multipolygin_by_rows_and_columns(min_row, max_row, min_column, max_column)
+
+    def get_multipolygon_by_cells(self, cell1, cell2):
+        if (cell1 or cell2) is None:
+            raise Exception("One or both points not in grid")
+        if cell1 == cell2:
+            return cell1.geometry
+
+        min_row = min(cell1.n_row, cell2.n_row)
+        max_row = max(cell1.n_row, cell2.n_row)
+        min_column = min(cell1.n_column, cell2.n_column)
+        max_column = max(cell1.n_column, cell2.n_column)
+
+        return self.__get_multipolygin_by_rows_and_columns(min_row, max_row, min_column, max_column)
 
     def get_multipolygon_by_line(self, line):
         list_of_cells = []
@@ -147,7 +141,7 @@ class GridForRoadmap:
 
 
 if __name__ == "__main__":
-    a = GridForRoadmap(2, 4)
+    a = GridForSearchMethods(2, 4)
     b = CellOfTheGrid(1, 1, 2, 2)
     a.add_cell_by_coordinates(b, 0, 1)
     print(a.cells)

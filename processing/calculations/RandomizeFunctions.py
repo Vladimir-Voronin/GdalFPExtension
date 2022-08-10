@@ -1,4 +1,4 @@
-from algorithms.GdalFPExtension.gdalObjects.GeometryPointExpand import GeometryPointExpand
+from algorithms.GdalUAV.processing.GeometryPointExpand import GeometryPointExpand
 import random
 from qgis.core import *
 import math
@@ -78,7 +78,7 @@ class RandomizeFunctions:
             y = y_source + distance * math.sin(f)
             point = QgsGeometry.fromPointXY(QgsPointXY(x, y))
             cell = grid.difine_point(point)
-            if cell is None:
+            if cell is None or cell.geometry is None:
                 break
             if cell.geometry.distance(point) > 0.0:
                 point_expand = GeometryPointExpand(point, cell.n_row, cell.n_column)
